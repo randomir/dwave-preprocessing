@@ -10,20 +10,14 @@ commands:
     parameters:
       cibw-version:
         type: string
-        default: 2.20.0
+        default: 3.1.2
     steps:
       - run:
           name: run cibuildwheel
           shell: bash -eo pipefail
           command: |
-            if [[ $OS == Windows_NT ]]; then
-              python -m pip install --user cibuildwheel==<< parameters.cibw-version >>
-              python -m cibuildwheel --output-dir dist
-            else
-              python3 -m pip install --user cibuildwheel==<< parameters.cibw-version >>
-              python3 -m cibuildwheel --output-dir dist
-            fi
-
+            python -m pip install --user cibuildwheel==<< parameters.cibw-version >>
+            python -m cibuildwheel --output-dir dist
       - store_artifacts: &store-artifacts
           path: ./dist
       - persist_to_workspace: &persist-to-workspace
@@ -79,8 +73,6 @@ jobs:
     parameters:
       python-version:
         type: string
-      cibw-arch:
-        type: string
 
     macos:
       xcode: 16.4.0
@@ -89,7 +81,6 @@ jobs:
     environment:
       <<: *global-environment
       CIBW_PROJECT_REQUIRES_PYTHON: ~=<< parameters.python-version>>
-      CIBW_ARCHS_MACOS: << parameters.cibw-arch >>
 
     steps:
       - checkout
@@ -304,15 +295,11 @@ workflows:
       - build-and-test-linux: &build
           matrix:
             parameters:
-              python-version: &python-versions [3.10.0, 3.11.0, 3.12.0, 3.13.0]
+              python-version: &python-versions [3.10.0, 3.11.0, 3.12.0, 3.13.0, 3.14.0]
       - build-and-test-linux-aarch64: *build
-      - build-sdist
-      - build-and-test-osx: &build-and-test-osx
-          matrix:
-            parameters:
-              python-version: *python-versions
-              cibw-arch: [x86_64, arm64]
+      - build-and-test-osx: *build
       - build-and-test-windows: *build
+      - build-sdist
       - test-codecov
       - test-doctest
       - test-dependencies:
@@ -322,9 +309,9 @@ workflows:
           matrix:
             parameters:
               # test the lowest and highest for each dependency
-              dependency-versions: [dimod==0.12.20 oldest-supported-numpy, dimod numpy]
+              dependency-versions: [dimod==0.12.21 oldest-supported-numpy, dimod numpy]
               python-version: *python-versions
-      - test-linux-cpp11  
+      - test-linux-cpp11
       - test-sdist:
           requires:
             - build-sdist
@@ -338,13 +325,7 @@ workflows:
             branches:
               ignore: /.*/
       - build-and-test-linux-aarch64: *deploy-build
-      - build-and-test-osx:
-          <<: *build-and-test-osx
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
+      - build-and-test-osx: *deploy-build
       - build-sdist:
           filters:
             tags:

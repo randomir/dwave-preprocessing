@@ -66,6 +66,6 @@ setup(
         ],
     install_requires=[
         'numpy>=1.17.3,<3.0.0',  # this is the oldest supported NumPy on Python 3.8
-        'dimod>=0.12.20,<0.13.0'
+        'dimod>=0.12.21,<0.13.0'
         ],
 )
